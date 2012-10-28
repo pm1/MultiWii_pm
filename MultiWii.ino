@@ -141,10 +141,10 @@ const char pidnames[] PROGMEM =
   "VEL;"
 ;
 
-static uint32_t currentTime = 0;
-static uint16_t previousTime = 0;
-static uint16_t cycleTime = 0;     // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
-static uint16_t calibratingA = 0;  // the calibration is done in the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
+static uint32_t currentTime;
+static uint16_t previousTime;
+static uint16_t cycleTime;     // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
+static uint16_t calibratingA;  // the calibration is done in the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
 static uint16_t calibratingG;
 static uint16_t acc_1G;             // this is the 1G measured acceleration
 static int16_t  acc_25deg;
@@ -156,14 +156,15 @@ static uint8_t  vbatMin = VBATNOMINAL;  // lowest battery voltage in 0.1V steps
 static uint8_t  rcOptions[CHECKBOXITEMS];
 static int32_t  BaroAlt;
 static int32_t  EstAlt;             // in cm
-static int16_t  BaroPID = 0;
+static int16_t  BaroPID;
 static int32_t  AltHold;
-static int16_t  errorAltitudeI = 0;
+static int32_t  LastAlt;
+static int16_t  errorAltitudeI;
 #if defined(BUZZER)
-  static uint8_t  toggleBeep = 0;
+  static uint8_t  toggleBeep;
 #endif
 #if defined(ARMEDTIMEWARNING)
-  static uint32_t  ArmedTimeWarningMicroSeconds = 0;
+  static uint32_t  ArmedTimeWarningMicroSeconds;
 #endif
 
 static int16_t  debug[4];
@@ -923,6 +924,7 @@ void loop () {
           if (!f.BARO_MODE) {
             f.BARO_MODE = 1;
             AltHold = EstAlt;
+            LastAlt = EstAlt;
             initialThrottleHold = rcCommand[THROTTLE];
             errorAltitudeI = 0;
             BaroPID=0;
@@ -1030,11 +1032,8 @@ void loop () {
     }
                   
     ts = micros();
-    int16_t da = 0;
     while ((micros() - ts) < 200) {  
-      da++;
-      debug[1] = da;
-      switch (taskOrder % 5) {
+        switch (taskOrder % 5) {
         case 0:
           taskOrder++;
           #if MAG

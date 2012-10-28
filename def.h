@@ -777,7 +777,7 @@
   #define ITG3200_LPF_42HZ
   #define GYR_CMPF_FACTOR 500.0f
   #define ACC_LPF_FACTOR 30
-  #define I2C_GPS
+//  #define I2C_GPS
 #endif
 
 #if defined(BOARD_PROTO_1)

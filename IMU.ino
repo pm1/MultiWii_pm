@@ -268,8 +268,8 @@ void getEstimatedAttitude(){
   #endif
 }
 
-#define UPDATE_INTERVAL 25000    // 40hz update rate (20hz LPF on acc)
-#define INIT_DELAY      4000000  // 4 sec initialization delay
+#define UPDATE_INTERVAL 25    // 40hz update rate (20hz LPF on acc)
+#define INIT_DELAY      100  // 4 sec initialization delay
 #define BARO_TAB_SIZE   21
 
 #define ACC_Z_DEADBAND (acc_1G/50)
@@ -284,14 +284,13 @@ void getEstimatedAttitude(){
   }
 
 int8_t getEstimatedAltitude(){
-  static uint32_t deadLine = INIT_DELAY;
-  static int32_t LastAlt;
+  static uint8_t deadLine = INIT_DELAY;
   int16_t error;
  
-  if ((currentTime - deadLine) < UPDATE_INTERVAL) 
+  if ((uint8_t)((uint8_t) millis() - deadLine) <= UPDATE_INTERVAL) 
     return 0;
-  deadLine = currentTime; 
- 
+  deadLine = millis();
+    
   error = AltHold - EstAlt;
   
   //D

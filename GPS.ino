@@ -2,7 +2,7 @@
 #if defined(TINY_GPS)
   #include "tinygps.h"
 #endif
-//test
+
 #if defined(GPS_SERIAL) || defined(GPS_FROM_OSD) || defined(TINY_GPS)
   typedef struct PID_PARAM_ {
     float kP;
@@ -455,8 +455,8 @@ int8_t GPS_NewData() {
         #endif
         //dTnav calculation
         //Time for calculating x,y speed and navigation pids
-        static uint32_t nav_loopTimer;
-        dTnav = (float)(millis() - nav_loopTimer)/ 1000.0;
+        static uint16_t nav_loopTimer;
+        dTnav = (float)((uint16_t)((uint16_t)millis() - nav_loopTimer))/ 1000.0;
         nav_loopTimer = millis();
         // prevent runup from bad GPS
         dTnav = min(dTnav, 1.0);  

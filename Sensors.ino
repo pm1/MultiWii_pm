@@ -434,10 +434,17 @@ calc_estalt () {
   static int8_t ialt;
   static int16_t diff;
   static int8_t last;
-  static int8_t count;
+  static int8_t count = -100;
   
   a_alt[ialt++] = BaroAlt;
   
+  if (count == -100) {
+    count = 0;
+    for (; ialt < ALTS; ialt++) {
+      a_alt[ialt++] = BaroAlt;
+    }
+  }
+
   if (ialt == ALTS) {
     ialt = 0;
   }
@@ -582,19 +589,21 @@ void i2c_BMP085_Calculate() {
   pressure = p + ((x1 + x2 + 3791) >> 4);
 }
 int8_t Baro_update() {
-  if (micros() < bmp085_ctx.deadline) return 0; 
+  static uint8_t last;
+  static uint8_t delta;
+  if ((uint8_t)((uint8_t) millis() - last) <= delta) return 0;
   TWBR = ((F_CPU / 400000L) - 16) / 2; // change the I2C clock rate to 400kHz, BMP085 is ok with this speed
   switch (bmp085_ctx.state) {
     case 0:
         i2c_BMP085_UT_Start(); 
-        bmp085_ctx.state++; 
-        bmp085_ctx.deadline = micros() + 5000;
+        bmp085_ctx.state++;
+        delta = 5; 
       break;
     case 1:
       i2c_BMP085_UT_Read();
       i2c_BMP085_UP_Start(); 
       bmp085_ctx.state++; 
-      bmp085_ctx.deadline = micros() + 28000;      
+      delta = 30;
       break;
     case 2: 
       i2c_BMP085_UP_Read(); 
@@ -602,10 +611,11 @@ int8_t Baro_update() {
       BaroAlt = (1.0f - pow(pressure/101325.0f, 0.190295f)) * 4433000.0f; //centimeter
       calc_estalt();
       i2c_BMP085_UT_Start(); 
-      bmp085_ctx.deadline = micros() + 5000;
+      delta = 5;
       bmp085_ctx.state= 1; 
       break;
   } 
+  last = millis(); 
   return 1;
 }
 #endif
@@ -639,7 +649,6 @@ static struct {
   union {uint32_t val; uint8_t raw[4]; } ut; //uncompensated T
   union {uint32_t val; uint8_t raw[4]; } up; //uncompensated P
   uint8_t  state;
-  uint32_t deadline;
 } ms561101ba_ctx;
 
 void i2c_MS561101BA_reset(){
@@ -727,33 +736,33 @@ void i2c_MS561101BA_Calculate() {
 }
 
 int8_t Baro_update() {
-  if (micros() < ms561101ba_ctx.deadline) return 0; 
-  ms561101ba_ctx.deadline = micros();
+  static uint8_t last;
+  static uint8_t delta;
+
+  if ((uint8_t)((uint8_t) millis() - last) < delta) return 0; 
   TWBR = ((F_CPU / 400000L) - 16) / 2; // change the I2C clock rate to 400kHz, MS5611 is ok with this speed
   switch (ms561101ba_ctx.state) {
     case 0: 
       i2c_MS561101BA_UT_Start(); 
       ms561101ba_ctx.state++; 
-      ms561101ba_ctx.deadline = micros() + 10000; //according to the specs, the pause should be at least 8.22ms
+      delta = 10;
       break;
     case 1: 
       i2c_MS561101BA_UT_Read(); 
+      i2c_MS561101BA_UP_Start(); 
       ms561101ba_ctx.state++;
+      delta = 10; 
       break;
     case 2: 
-      i2c_MS561101BA_UP_Start(); 
-      ms561101ba_ctx.state++; 
-      ms561101ba_ctx.deadline = micros() + 10000; //according to the specs, the pause should be at least 8.22ms
-      break;
-    case 3: 
       i2c_MS561101BA_UP_Read();
       i2c_MS561101BA_Calculate();
       BaroAlt = (1.0f - pow(pressure/101325.0f, 0.190295f)) * 4433000.0f; //centimeter
       calc_estalt();
-      ms561101ba_ctx.state = 0; 
-      ms561101ba_ctx.deadline = micros() + 4000;
+      ms561101ba_ctx.state = 0;
+      delta = 4; 
       break;
   } 
+  last = millis();
   return 1;
 }
 #endif
