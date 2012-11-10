@@ -1225,7 +1225,7 @@ void loop () {
   mixTable();
   writeServos();
   writeMotors();
-  
+
   // IMU-hier 300us
 
 }

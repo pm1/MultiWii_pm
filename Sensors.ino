@@ -1621,6 +1621,58 @@ void Sonar_update() {
       tinygps_query();
     }
 }
+#elif defined(SONAR_GENERIC_ECHOPULSE) 
+
+uint32_t SONAR_GEP_startTime;
+uint32_t SONAR_GEP_echoTime;
+int8_t   SONAR_GEP_new_value;
+
+void Sonar_init()
+{
+  SONAR_GEP_EchoPin_PCICR;
+  SONAR_GEP_EchoPin_PCMSK;
+  SONAR_GEP_EchoPin_PINMODE_IN;
+  SONAR_GEP_TriggerPin_PINMODE_OUT;
+  Sonar_update();
+  debug[1]= 1;
+}
+
+ISR(SONAR_GEP_EchoPin_PCINT_vect) {
+  if (SONAR_GEP_EchoPin_PIN & (1<<SONAR_GEP_EchoPin_PCINT)) { 
+    SONAR_GEP_startTime = micros();
+  }
+  else {
+    SONAR_GEP_echoTime = micros();
+    SONAR_GEP_new_value = 1;
+  }
+}
+
+void Sonar_update() {
+
+  uint16_t tmp;
+  static uint16_t last_good;
+   if (SONAR_GEP_new_value) {
+      SONAR_GEP_new_value= 0;
+ 
+      tmp = (SONAR_GEP_echoTime  - SONAR_GEP_startTime) / SONAR_GENERIC_SCALE;
+      debug[2] = (SONAR_GEP_echoTime  - SONAR_GEP_startTime) / 1000;
+      if (tmp < SONAR_GENERIC_MAX_RANGE) {
+        sonarAlt = tmp;
+        last_good = millis();       
+      }
+    debug[1] = sonarAlt;
+    SONAR_GEP_TriggerPin_PIN_LOW;
+    delayMicroseconds(2);
+    SONAR_GEP_TriggerPin_PIN_HIGH;
+    delayMicroseconds(10);
+    SONAR_GEP_TriggerPin_PIN_LOW;
+
+    }
+    if ((uint16_t)((uint16_t)millis() - last_good) > 500) {
+      sonarAlt = -1;
+    }
+
+}
 #else
 inline void Sonar_init() {}
 inline void Sonar_update() {}
