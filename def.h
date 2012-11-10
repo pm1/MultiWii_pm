@@ -1075,13 +1075,13 @@
 #endif
 
 #if defined(SONAR_GENERIC_ECHOPULSE)
-  #define SONAR_GEP_TriggerPin             12
+  #define SONAR_GEP_TriggerPin             9
   #define SONAR_GEP_TriggerPin_PINMODE_OUT pinMode(SONAR_GEP_TriggerPin,OUTPUT);
-  #define SONAR_GEP_TriggerPin_PIN_HIGH    PORTB |= 1<<6;
-  #define SONAR_GEP_TriggerPin_PIN_LOW     PORTB &= ~(1<<6);
-  #define SONAR_GEP_EchoPin                11
+  #define SONAR_GEP_TriggerPin_PIN_HIGH    PORTH |= 1<<6;
+  #define SONAR_GEP_TriggerPin_PIN_LOW     PORTH &= ~(1<<6);
+  #define SONAR_GEP_EchoPin                10
   #define SONAR_GEP_EchoPin_PINMODE_IN     pinMode(SONAR_GEP_EchoPin,INPUT);
-  #define SONAR_GEP_EchoPin_PCINT          PCINT5
+  #define SONAR_GEP_EchoPin_PCINT          PCINT4
   #define SONAR_GEP_EchoPin_PCICR          PCICR |= (1<<PCIE0); // PCINT 0-7 belong to PCIE0
   #define SONAR_GEP_EchoPin_PCMSK          PCMSK0 = (1<<SONAR_GEP_EchoPin_PCINT); // Mask Pin PCINT5 - all other PIns PCINT0-7 are not allowed to create interrupts!
   #define SONAR_GEP_EchoPin_PCINT_vect     PCINT0_vect  // PCINT0-7 belog PCINT0_vect
