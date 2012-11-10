@@ -1623,7 +1623,6 @@ void Sonar_update() {
 }
 #elif defined(SONAR_GENERIC_ECHOPULSE) 
 
-uint32_t SONAR_GEP_startTime;
 uint32_t SONAR_GEP_echoTime;
 int8_t   SONAR_GEP_new_value;
 
@@ -1639,40 +1638,46 @@ void Sonar_init()
 
 ISR(SONAR_GEP_EchoPin_PCINT_vect) {
   if (SONAR_GEP_EchoPin_PIN & (1<<SONAR_GEP_EchoPin_PCINT)) { 
-    SONAR_GEP_startTime = micros();
+    SONAR_GEP_echoTime = micros();
   }
   else {
-    SONAR_GEP_echoTime = micros();
+    SONAR_GEP_echoTime = micros() - SONAR_GEP_echoTime;
     SONAR_GEP_new_value = 1;
   }
 }
 
 void Sonar_update() {
 
-  uint16_t tmp;
   static uint16_t last_good;
-   if (SONAR_GEP_new_value) {
-      SONAR_GEP_new_value= 0;
+  static uint8_t last_measurement;
+  static uint8_t trig;
+  if (SONAR_GEP_new_value) {
+    SONAR_GEP_new_value= 0;
  
-      tmp = (SONAR_GEP_echoTime  - SONAR_GEP_startTime) / SONAR_GENERIC_SCALE;
-      debug[2] = (SONAR_GEP_echoTime  - SONAR_GEP_startTime) / 1000;
-      if (tmp < SONAR_GENERIC_MAX_RANGE) {
-        sonarAlt = tmp;
-        last_good = millis();       
-      }
-    debug[1] = sonarAlt;
-    SONAR_GEP_TriggerPin_PIN_LOW;
-    delayMicroseconds(2);
-    SONAR_GEP_TriggerPin_PIN_HIGH;
-    delayMicroseconds(10);
-    SONAR_GEP_TriggerPin_PIN_LOW;
-
+    debug[2] = SONAR_GEP_echoTime / 1000;
+    if (SONAR_GEP_echoTime < (SONAR_GENERIC_MAX_RANGE * SONAR_GENERIC_SCALE)) {
+      sonarAlt = SONAR_GEP_echoTime / SONAR_GENERIC_SCALE;
+      last_good = millis();       
     }
-    if ((uint16_t)((uint16_t)millis() - last_good) > 500) {
+    
+    trig = 0;
+  } 
+
+  debug[1] = sonarAlt; 
+
+  if ((uint8_t)((uint8_t) millis() - last_measurement) > 50) {
+    if ((uint16_t)((uint16_t) millis() - last_good) > 500) {
       sonarAlt = -1;
     }
-
-}
+    if (!trig) {
+      last_measurement = millis();
+      SONAR_GEP_TriggerPin_PIN_HIGH;
+      delayMicroseconds(10);
+      SONAR_GEP_TriggerPin_PIN_LOW;
+      trig = 1;
+    }
+  }
+}   
 #else
 inline void Sonar_init() {}
 inline void Sonar_update() {}

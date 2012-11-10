@@ -479,7 +479,7 @@ void LCDprint(uint8_t i) {
   LCDPIN_ON //switch ON digital PIN 0
   delayMicroseconds(BITDELAY);
 #elif defined(LCD_TEXTSTAR) || defined(LCD_VT100)
-  SerialWrite(0, i );
+  SerialWrite(LCD_SERIAL, i );
 #elif defined(LCD_ETPP)
   i2c_ETPP_send_char(i);
 #elif defined(LCD_LCD03)
@@ -1249,7 +1249,7 @@ void configurationLoop() {
       readRawRC(1); delay(44); // For digital receivers like Spektrum, SBUS, and Serial, to ensure that an "old" frame does not cause immediate exit at startup. 
     #endif
     #if defined(LCD_TEXTSTAR) || defined(LCD_VT100) // textstar or vt100 can send keys
-      key = ( SerialAvailable(0) ? SerialRead(0) : 0 );
+      key = ( SerialAvailable(LCD_SERIAL) ? SerialRead(LCD_SERIAL) : 0 );
     #endif
     #ifdef LCD_CONF_DEBUG
       delay(1000);

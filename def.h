@@ -964,7 +964,11 @@
   #define MINTHROTTLE 1150
   #define SONAR_GENERIC_ECHOPULSE
   #define SERVO_TILT
-
+//  #define LCD_TELEMETRY
+//  #define LCD_SERIAL 3
+//  #define LCD_VT100
+//  #define LCD_CONF
+//  #define LCD_TELEMETRY_AUTO "123452679"
 #endif
 
 #if defined(LADYBIRD)
