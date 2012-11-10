@@ -959,7 +959,7 @@
   #define SERVO_4_PINMODE            pinMode(11,OUTPUT);        // SERVO4 , use hardware PWM
   #define SERVO_5_PINMODE            pinMode(12,OUTPUT);        // SERVO5 , use hardware PWM
   #define GYR_CMPF_FACTOR 500.0f
-  #define GPS_SERIAL 1 // should be 2 for flyduino v2. It's the serial port number on arduino MEGA
+  #define GPS_SERIAL 2 // should be 2 for flyduino v2. It's the serial port number on arduino MEGA
   #define GPS_LED_INDICATOR
   #define MINTHROTTLE 1150
   #define SONAR_GENERIC_ECHOPULSE
