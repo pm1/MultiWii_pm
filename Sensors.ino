@@ -434,17 +434,10 @@ calc_estalt () {
   static int8_t ialt;
   static int16_t diff;
   static int8_t last;
-  static int8_t count = -100;
+  static int8_t count;
   
   a_alt[ialt++] = BaroAlt;
   
-  if (count == -100) {
-    count = 0;
-    for (; ialt < ALTS; ialt++) {
-      a_alt[ialt++] = BaroAlt;
-    }
-  }
-
   if (ialt == ALTS) {
     ialt = 0;
   }
@@ -591,7 +584,8 @@ void i2c_BMP085_Calculate() {
 int8_t Baro_update() {
   static uint8_t last;
   static uint8_t delta;
-  if ((uint8_t)((uint8_t) millis() - last) <= delta) return 0;
+
+  if ((uint8_t)((uint8_t) millis() - last) < delta) return 0; 
   TWBR = ((F_CPU / 400000L) - 16) / 2; // change the I2C clock rate to 400kHz, BMP085 is ok with this speed
   switch (bmp085_ctx.state) {
     case 0:
