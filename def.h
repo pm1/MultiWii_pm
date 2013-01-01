@@ -65,6 +65,8 @@
   #define MEGA
 #endif
 
+
+
 /**************************   atmega328P (Promini)  ************************************/
 #if defined(PROMINI)
   #if !defined(MONGOOSE1_0)
@@ -958,12 +960,15 @@
   #define SERVO_3_PIN_LOW            PORTL &= ~(1<<3);
   #define SERVO_4_PINMODE            pinMode(11,OUTPUT);        // SERVO4 , use hardware PWM
   #define SERVO_5_PINMODE            pinMode(12,OUTPUT);        // SERVO5 , use hardware PWM
-  #define GYR_CMPF_FACTOR 500.0f
-  #define GPS_SERIAL 2 // should be 2 for flyduino v2. It's the serial port number on arduino MEGA
+  #define GYR_CMPF_FACTOR 400.0f
+  #define GPS_SERIAL 2 
   #define GPS_LED_INDICATOR
-  #define MINTHROTTLE 1150
+  #define MINTHROTTLE 1140
   #define SONAR_GENERIC_ECHOPULSE
   #define SERVO_TILT
+  #define MPU6050_LPF_42HZ
+  #define ACC_LPF_FACTOR 6
+  #define MY_GYRO_SCALE 0.85
 //  #define LCD_TELEMETRY
 //  #define LCD_SERIAL 3
 //  #define LCD_VT100
@@ -1074,6 +1079,14 @@
   #undef INTERNAL_I2C_PULLUPS
 #endif
 
+#if !defined(MY_GYRO_SCALE)
+  #define MY_GYRO_SCALE 1.0
+#endif
+
+
+/**************************************************************************************/
+/***************              Sensor Type definitions              ********************/
+/**************************************************************************************/
 #if defined(SONAR_GENERIC_ECHOPULSE)
   #define SONAR_GEP_TriggerPin             9
   #define SONAR_GEP_TriggerPin_PINMODE_OUT pinMode(SONAR_GEP_TriggerPin,OUTPUT);
@@ -1087,11 +1100,6 @@
   #define SONAR_GEP_EchoPin_PCINT_vect     PCINT0_vect  // PCINT0-7 belog PCINT0_vect
   #define SONAR_GEP_EchoPin_PIN            PINB  // PCINT0-7 belong to PINB
 #endif
-
-
-/**************************************************************************************/
-/***************              Sensor Type definitions              ********************/
-/**************************************************************************************/
 
 #if defined(ADXL345) || defined(BMA020) || defined(BMA180) || defined(NUNCHACK) || defined(MMA7455) || defined(ADCACC) || defined(LIS3LV02) || defined(LSM303DLx_ACC) || defined(MPU6050) || defined(NUNCHUCK)
   #define ACC 1

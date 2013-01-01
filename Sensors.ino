@@ -1151,11 +1151,16 @@ int8_t Mag_getADC() {
   #define MAG_DATA_REGISTER 0x03
   
   void Mag_init() { 
+
+    delay (10);
+    getADC();
+
     // First time initalization is a dummy, does not work
-    i2c_writeReg(MAG_ADDRESS ,0x00 ,0x70 ); //Configuration Register A  -- 0 11 100 01  num samples: 8 ; output rate: 15Hz 
+    i2c_writeReg(MAG_ADDRESS ,0x00 ,0x71 ); //Configuration Register A  -- 0 11 100 01  num samples: 8 ; output rate: 15Hz 
     i2c_writeReg(MAG_ADDRESS ,0x01 ,0x60 ); //Configuration Register B  -- 011 00000    configuration gain 2.5Ga
     i2c_writeReg(MAG_ADDRESS ,0x02 ,0x01 ); //Mode register             -- 000000 01    single Conversion Mode
-   delay(70);
+    delay(16);
+    getADC();
     // now real initialization
     i2c_writeReg(MAG_ADDRESS ,0x00 ,0x71 ); //Configuration Register A  -- 0 11 100 01  num samples: 8 ; output rate: 15Hz ; positive bias
     i2c_writeReg(MAG_ADDRESS ,0x01 ,0x60 ); //Configuration Register B  -- 011 00000    configuration gain 2.5Ga
@@ -1163,9 +1168,8 @@ int8_t Mag_getADC() {
     // read values from the compass -  self test operation
     // by placing the mode register into single-measurement mode (0x01), two data acquisition cycles will be made on each magnetic vector.
     // The first acquisition values will be subtracted from the second acquisition, and the net measurement will be placed into the data output registers
-    delay(150);
-     getADC();
-      
+    delay(16);
+    getADC();
     #if defined(HMC5883)
       magCal[ROLL]  =  1160.0 / abs(magADC[ROLL]);
       magCal[PITCH] =  1160.0 / abs(magADC[PITCH]);
@@ -1179,6 +1183,9 @@ int8_t Mag_getADC() {
     // leave test mode
     i2c_writeReg(MAG_ADDRESS ,0x00 ,0x70 ); //Configuration Register A  -- 0 11 100 00  num samples: 8 ; output rate: 15Hz ; normal measurement mode
     i2c_writeReg(MAG_ADDRESS ,0x01 ,0x20 ); //Configuration Register B  -- 001 00000    configuration gain 1.3Ga
+    i2c_writeReg(MAG_ADDRESS ,0x02 ,0x01 ); //Mode register             -- 000000 00    continuous Conversion Mode
+    delay (16);
+    getADC();
     i2c_writeReg(MAG_ADDRESS ,0x02 ,0x00 ); //Mode register             -- 000000 00    continuous Conversion Mode
 
     magInit = 1;
@@ -1627,7 +1634,7 @@ void Sonar_init()
   SONAR_GEP_EchoPin_PINMODE_IN;
   SONAR_GEP_TriggerPin_PINMODE_OUT;
   Sonar_update();
-  debug[1]= 1;
+//  debug[1]= 1;
 }
 
 ISR(SONAR_GEP_EchoPin_PCINT_vect) {
@@ -1648,7 +1655,7 @@ void Sonar_update() {
   if (SONAR_GEP_new_value) {
     SONAR_GEP_new_value= 0;
  
-    debug[2] = SONAR_GEP_echoTime / 1000;
+//    debug[2] = SONAR_GEP_echoTime / 1000;
     if (SONAR_GEP_echoTime < (SONAR_GENERIC_MAX_RANGE * SONAR_GENERIC_SCALE)) {
       sonarAlt = SONAR_GEP_echoTime / SONAR_GENERIC_SCALE;
       last_good = millis();       
@@ -1657,7 +1664,7 @@ void Sonar_update() {
     trig = 0;
   } 
 
-  debug[1] = sonarAlt; 
+//  debug[1] = sonarAlt; 
 
   if ((uint8_t)((uint8_t) millis() - last_measurement) > 50) {
     if ((uint16_t)((uint16_t) millis() - last_good) > 500) {

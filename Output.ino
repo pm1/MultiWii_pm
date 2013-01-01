@@ -924,8 +924,10 @@ void mixTable() {
       #define S_PITCH servo[0]
       #define S_ROLL  servo[1]
     #endif
-    S_PITCH = TILT_PITCH_MIDDLE + rcData[AUX3]-1500;
-    S_ROLL  = TILT_ROLL_MIDDLE  + rcData[AUX4]-1500;
+//    S_PITCH = TILT_PITCH_MIDDLE + rcData[AUX3]-1500;
+    S_PITCH = TILT_PITCH_MIDDLE + rcData[AUX4]-1500;
+//    S_ROLL  = TILT_ROLL_MIDDLE  + rcData[AUX4]-1500;
+    S_ROLL  = TILT_ROLL_MIDDLE;
     if (rcOptions[BOXCAMSTAB]) {
       S_PITCH += TILT_PITCH_PROP * angle[PITCH] /16 ;
       S_ROLL  += TILT_ROLL_PROP  * angle[ROLL]  /16 ;

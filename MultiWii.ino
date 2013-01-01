@@ -1169,6 +1169,9 @@ void loop () {
   int16_t prop;
   prop = max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])); // range [0;500]
   
+  debug[0] = angle[0];
+  debug[1] = angle[1];
+  
   for(axis=0;axis<3;axis++) {
     if ((f.ANGLE_MODE || f.HORIZON_MODE) && axis<2 ) { // MODE relying on ACC
       // 50 degrees max inclination

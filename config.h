@@ -217,14 +217,14 @@
     /* The following lines apply only for a pitch/roll tilt stabilization system. Uncomment the first or second line to activate it */
     //#define SERVO_MIX_TILT
     //#define SERVO_TILT
-    #define TILT_PITCH_MIN    1020    //servo travel min, don't set it below 1020
-    #define TILT_PITCH_MAX    2000    //servo travel max, max value=2000
+    #define TILT_PITCH_MIN    1050    //servo travel min, don't set it below 1020
+    #define TILT_PITCH_MAX    1950    //servo travel max, max value=2000
     #define TILT_PITCH_MIDDLE 1500    //servo neutral value
-    #define TILT_PITCH_PROP   10      //servo proportional (tied to angle) ; can be negative to invert movement
-    #define TILT_ROLL_MIN     1020
-    #define TILT_ROLL_MAX     2000
+    #define TILT_PITCH_PROP   30      //servo proportional (tied to angle) ; can be negative to invert movement
+    #define TILT_ROLL_MIN     1180
+    #define TILT_ROLL_MAX     1820
     #define TILT_ROLL_MIDDLE  1500
-    #define TILT_ROLL_PROP    10
+    #define TILT_ROLL_PROP    30
 
     /* camera trigger function : activated via Rc Options in the GUI, servo output=A2 on promini */
     //#define CAMTRIG
