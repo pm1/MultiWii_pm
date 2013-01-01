@@ -1,4 +1,6 @@
 MultiWii_pm
 ===========
 
-My MultiWii
+My version of MultiWii
+
+original code see www.multiwii.com
