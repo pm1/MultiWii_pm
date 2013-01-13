@@ -1083,7 +1083,7 @@ int8_t Mag_getADC() {
   }
  
   if (tCal != 0) {
-    if ((t - tCal) < 50000000) { // 30s: you have 30s to turn the multi in all directions
+    if ((t - tCal) < 60000000) { // 30s: you have 30s to turn the multi in all directions
       LEDPIN_TOGGLE;
       for(axis=0;axis<3;axis++) {
         if (magADC[axis] < magZeroTempMin[axis]) magZeroTempMin[axis] = magADC[axis];
@@ -1188,7 +1188,7 @@ int8_t Mag_getADC() {
     getADC();
     i2c_writeReg(MAG_ADDRESS ,0x02 ,0x00 ); //Mode register             -- 000000 00    continuous Conversion Mode
 
-    magInit = 1;
+    magInit = 1;    
   }
 
 void getADC() {

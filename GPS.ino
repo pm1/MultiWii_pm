@@ -459,7 +459,7 @@ int8_t GPS_NewData() {
         dTnav = (float)((uint16_t)((uint16_t)millis() - nav_loopTimer))/ 1000.0;
         nav_loopTimer = millis();
         // prevent runup from bad GPS
-        dTnav = min(dTnav, 1.0);  
+         dTnav = min(dTnav, 1.0);  
   
         //calculate distance and bearings for gui and other stuff continously - From home to copter
         uint32_t dist;
@@ -1194,17 +1194,19 @@ bool GPS_newFrame(char c) {
       if(_fix_ok) {
         GPS_coord[LON] = _buffer.posllh.longitude;
         GPS_coord[LAT] = _buffer.posllh.latitude;
-        GPS_altitude   = _buffer.posllh.altitude_msl / 1000;      //alt in m
+        GPS_altitude   = _buffer.posllh.altitude_msl / 1000;      //alt in m        
       }
       f.GPS_FIX = _fix_ok;
       return true;        // POSLLH message received, allow blink GUI icon and LED
       break;
+
     case MSG_SOL:
       _fix_ok = 0;
       if((_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D)) _fix_ok = 1;
       GPS_numSat = _buffer.solution.satellites;
       break;
-    case MSG_VELNED:
+
+      case MSG_VELNED:
       GPS_speed         = _buffer.velned.speed_2d;  // cm/s
       GPS_ground_course = (uint16_t)(_buffer.velned.heading_2d / 10000);  // Heading 2D deg * 100000 rescaled to deg * 10
       break;

@@ -1028,7 +1028,6 @@ void loop () {
     static uint32_t aa;
     if ((millis() - aa) > 10000) {
       aa = millis();
-      debug[3] = 0;
     }
                   
     ts = micros();
@@ -1057,16 +1056,9 @@ void loop () {
           #endif
         case 3:
           taskOrder++;
-          static uint32_t dd;
-          dd = micros();
           #if GPS
             if(GPS_Enable) {
-              static uint32_t dd;
-              dd = micros();
               if (GPS_NewData()) {
-                if ((micros() - dd) > debug[3]) {
-                  debug[3] = micros() -dd;           
-                } 
                 break;
               }
             }
@@ -1169,12 +1161,12 @@ void loop () {
   int16_t prop;
   prop = max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])); // range [0;500]
   
-  debug[0] = angle[0];
-  debug[1] = angle[1];
-  
   for(axis=0;axis<3;axis++) {
     if ((f.ANGLE_MODE || f.HORIZON_MODE) && axis<2 ) { // MODE relying on ACC
       // 50 degrees max inclination
+     debug[axis]= nav[axis];
+     debug[axis+2] = GPS_angle[axis];
+
       errorAngle = constrain(2*rcCommand[axis] + GPS_angle[axis],-500,+500) - angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
       #ifdef LEVEL_PDF
         PTermACC      = -(int32_t)angle[axis]*conf.P8[PIDLEVEL]/100 ;
