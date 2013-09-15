@@ -270,12 +270,13 @@ uint8_t getEstimatedAltitude(){
   static int32_t LastAlt;
   static float baroGroundTemperatureScale;
   static float vel = 0.0f;
-  uint32_t dTime;
+  uint8_t dTime;
+  static uint32_t l;
 
-  if ((uint8_t)((uint8_t) millis() - deadLine) <= UPDATE_INTERVAL) 
+  dTime = ((uint8_t)((uint8_t) millis() - deadLine));
+
+  if (dTime <= UPDATE_INTERVAL) 
     return 0;
-  dTime= (millis() - deadLine) * 1000;
-  deadLine = millis();
 
   if(calibratingB > 0) {
     if (EstPressure) {
@@ -294,12 +295,17 @@ uint8_t getEstimatedAltitude(){
 
     error = AltHold - alt.EstAlt;
 	  
+
+    debug[3] = error;
+    
     //D
     BaroPID=conf.pid[PIDALT].D8*(LastAlt-alt.EstAlt) / 40;
+    debug[2] = BaroPID; 
     LastAlt = (9 * LastAlt + alt.EstAlt) / 10;
   
     //P
     BaroPID += 1L * conf.pid[PIDALT].P8 * constrain(error,-20*conf.pid[PIDALT].P8,20*conf.pid[PIDALT].P8) /100;
+    debug[0] = 1L * conf.pid[PIDALT].P8 * constrain(error,-20*conf.pid[PIDALT].P8,20*conf.pid[PIDALT].P8) /100;
     BaroPID = constrain(BaroPID,-150,+150); //sum of P and D should be in range 150
 
     //I
@@ -307,6 +313,7 @@ uint8_t getEstimatedAltitude(){
     errorAltitudeI += error*conf.pid[PIDALT].I8/50;
     errorAltitudeI = constrain(errorAltitudeI,-30000,30000);
     error = errorAltitudeI / 500; //I in range +/-60
+    debug[1] = error;
 
     BaroPID+=error;
  
@@ -326,18 +333,19 @@ uint8_t getEstimatedAltitude(){
     int16_t baroVel = (alt.EstAlt - lastBaroAlt) * (1000 / UPDATE_INTERVAL);
     lastBaroAlt = alt.EstAlt;
 
-    baroVel = constrain(baroVel, -300, 300); // constrain baro velocity +/- 300cm/s
+    baroVel = constrain(baroVel, -300, 300); // constrain baro velocity +/- 300cm
     applyDeadband(baroVel, 10); // to reduce noise near zero
 
     // Integrator - velocity, cm/sec
-    vel += accZ * ACC_VelScale * dTime;
-
+    vel += accZ * ACC_VelScale * dTime * 1000;
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity). 
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
-    vel = vel * 0.985f + baroVel * 0.015f;
+
+     vel = vel * 0.985f + baroVel * 0.015f;
 
     alt.vario = vel;
   #endif
+  deadLine = millis();
   return 1;
 }
 #endif //BARO
