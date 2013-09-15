@@ -845,13 +845,13 @@ static void GPS_calc_poshold(void) {
         get_P(rate_error[axis],                                               &poshold_ratePID_PARAM)
        +get_I(rate_error[axis] + error[axis], &dTnav, &poshold_ratePID[axis], &poshold_ratePID_PARAM);
 
-    d = get_D(error[axis],                    &dTnav, &poshold_ratePID[axis], &poshold_ratePID_PARAM);
+//    d = get_D(error[axis],                    &dTnav, &poshold_ratePID[axis], &poshold_ratePID_PARAM);
 
-    d = constrain(d, -2000, 2000);
+//    d = constrain(d, -2000, 2000);
     // get rid of noise
-    if(abs(actual_speed[axis]) < 50) d = 0;
+//    if(abs(actual_speed[axis]) < 50) d = 0;
 
-    nav[axis] +=d;
+//    nav[axis] +=d;
     nav[axis]  = constrain(nav[axis], -NAV_BANK_MAX, NAV_BANK_MAX);
     navPID[axis].integrator = poshold_ratePID[axis].integrator;
   }

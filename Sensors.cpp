@@ -1095,7 +1095,7 @@ uint8_t Mag_getADC() { // return 1 when news values are available, 0 otherwise
   }
  
   if (tCal != 0) {
-    if ((t - tCal) < 30000000) { // 30s: you have 30s to turn the multi in all directions
+    if ((t - tCal) < 60000000) { // 30s: you have 30s to turn the multi in all directions
       LEDPIN_TOGGLE;
       for(axis=0;axis<3;axis++) {
         if (imu.magADC[axis] < magZeroTempMin[axis]) magZeroTempMin[axis] = imu.magADC[axis];
@@ -1184,14 +1184,14 @@ void Mag_init() {
   // Note that the  very first measurement after a gain change maintains the same gain as the previous setting. 
   // The new gain setting is effective from the second measurement and on.
 
-  i2c_writeReg(MAG_ADDRESS, HMC58X3_R_CONFB, 2 << 5);  //Set the Gain
+  i2c_writeReg(MAG_ADDRESS, HMC58X3_R_CONFB, 0x60);  //Set the Gain
   i2c_writeReg(MAG_ADDRESS,HMC58X3_R_MODE, 1);
-  delay(100);
+  delay(30);
   getADC();  //Get one sample, and discard it
 
   for (uint8_t i=0; i<10; i++) { //Collect 10 samples
     i2c_writeReg(MAG_ADDRESS,HMC58X3_R_MODE, 1);
-    delay(100);
+    delay(30);
     getADC();   // Get the raw values in case the scales have already been changed.
                 
     // Since the measurements are noisy, they should be averaged rather than taking the max.
@@ -1210,7 +1210,7 @@ void Mag_init() {
   i2c_writeReg(MAG_ADDRESS,HMC58X3_R_CONFA, 0x010 + HMC_NEG_BIAS); // Reg A DOR=0x010 + MS1,MS0 set to negative bias.
   for (uint8_t i=0; i<10; i++) { 
     i2c_writeReg(MAG_ADDRESS,HMC58X3_R_MODE, 1);
-    delay(100);
+    delay(30);
     getADC();  // Get the raw values in case the scales have already been changed.
                 
     // Since the measurements are noisy, they should be averaged.
@@ -1225,9 +1225,9 @@ void Mag_init() {
     }
   }
 
-  magGain[0]=fabs(820.0*HMC58X3_X_SELF_TEST_GAUSS*2.0*10.0/xyz_total[0]);
-  magGain[1]=fabs(820.0*HMC58X3_Y_SELF_TEST_GAUSS*2.0*10.0/xyz_total[1]);
-  magGain[2]=fabs(820.0*HMC58X3_Z_SELF_TEST_GAUSS*2.0*10.0/xyz_total[2]);
+  magGain[0]=fabs(660.0*HMC58X3_X_SELF_TEST_GAUSS*2.0*10.0/xyz_total[0]);
+  magGain[1]=fabs(660.0*HMC58X3_Y_SELF_TEST_GAUSS*2.0*10.0/xyz_total[1]);
+  magGain[2]=fabs(660.0*HMC58X3_Z_SELF_TEST_GAUSS*2.0*10.0/xyz_total[2]);
 
   // leave test mode
   i2c_writeReg(MAG_ADDRESS ,HMC58X3_R_CONFA ,0x70 ); //Configuration Register A  -- 0 11 100 00  num samples: 8 ; output rate: 15Hz ; normal measurement mode
@@ -1709,6 +1709,62 @@ void Sonar_update() {
       tinygps_query();
     }
 }
+#elif defined(SONAR_GENERIC_ECHOPULSE) 
+
+uint32_t SONAR_GEP_echoTime;
+int8_t   SONAR_GEP_new_value;
+void Sonar_update(void);
+
+void Sonar_init()
+{
+  SONAR_GEP_EchoPin_PCICR;
+  SONAR_GEP_EchoPin_PCMSK;
+  SONAR_GEP_EchoPin_PINMODE_IN;
+  SONAR_GEP_TriggerPin_PINMODE_OUT;
+  Sonar_update();
+}
+
+ISR(SONAR_GEP_EchoPin_PCINT_vect) {
+  if (SONAR_GEP_EchoPin_PIN & (1<<SONAR_GEP_EchoPin_PCINT)) { 
+    SONAR_GEP_echoTime = micros();
+  }
+  else {
+    SONAR_GEP_echoTime = micros() - SONAR_GEP_echoTime;
+    SONAR_GEP_new_value = 1;
+  }
+}
+
+void Sonar_update() {
+
+  static uint16_t last_good;
+  static uint8_t last_measurement;
+  static uint8_t trig;
+  if (SONAR_GEP_new_value) {
+    SONAR_GEP_new_value= 0;
+ 
+    debug[3] = SONAR_GEP_echoTime;
+    if (SONAR_GEP_echoTime < (SONAR_GENERIC_MAX_RANGE * SONAR_GENERIC_SCALE)) {
+      sonarAlt = SONAR_GEP_echoTime / SONAR_GENERIC_SCALE;
+      debug[3] = (SONAR_GEP_echoTime * 10) / SONAR_GENERIC_SCALE;
+      last_good = millis();       
+    }
+    
+    trig = 0;
+  } 
+  
+  if ((uint8_t)((uint8_t) millis() - last_measurement) > 50) {
+    if ((uint16_t)((uint16_t) millis() - last_good) > 500) {
+      sonarAlt = -1;
+    }
+    if (!trig) {
+      last_measurement = millis();
+      SONAR_GEP_TriggerPin_PIN_HIGH;
+      delayMicroseconds(10);
+      SONAR_GEP_TriggerPin_PIN_LOW;
+      trig = 1;
+    }
+  }
+}   
 #else
 inline void Sonar_init() {}
 void Sonar_update() {}

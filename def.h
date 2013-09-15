@@ -1181,6 +1181,11 @@
   #define ACC_ORIENTATION(X, Y, Z)  {imu.accADC[ROLL]  = -X; imu.accADC[PITCH]  = -Y; imu.accADC[YAW]  =  Z;}
   #define GYRO_ORIENTATION(X, Y, Z) {imu.gyroADC[ROLL] =  Y; imu.gyroADC[PITCH] = -X; imu.gyroADC[YAW] = -Z;}
   #define MAG_ORIENTATION(X, Y, Z)  {imu.magADC[ROLL]  =  X; imu.magADC[PITCH]  =  Y; imu.magADC[YAW]  = -Z;}
+  #define MINTHROTTLE 1160 
+  #define ITG3200_LPF_42HZ
+  #define GYR_CMPF_FACTOR 500.0f
+  #define ACC_LPF_FACTOR 5
+  #define I2C_GPS
 #endif
 
 #if defined(CRIUS_SE_v2_0)
@@ -1299,7 +1304,11 @@
   #define BMP085
   #define ACC_ORIENTATION(X, Y, Z) {imu.accADC[ROLL] = -X; imu.accADC[PITCH] = -Y; imu.accADC[YAW] = Z;}
   #define GYRO_ORIENTATION(X, Y, Z) {imu.gyroADC[ROLL] = Y; imu.gyroADC[PITCH] = -X; imu.gyroADC[YAW] = -Z;}
-  #define MAG_ORIENTATION(X, Y, Z) {imu.magADC[ROLL] = -Y; imu.magADC[PITCH] = X; imu.magADC[YAW] = -Z;} 
+  #define MAG_ORIENTATION(X, Y, Z) {imu.magADC[ROLL] = -Y; imu.magADC[PITCH] = X; imu.magADC[YAW] = -Z;}
+  #define MINTHROTTLE 1250 
+  #define ITG3200_LPF_42HZ
+  #define ACC_LPF_FACTOR 5
+  #define GYR_CMPF_FACTOR 500.0f
 #endif
 
 #if defined(Bobs_6DOF_V1)
@@ -1375,6 +1384,16 @@
   #define SERVO_3_PINMODE            pinMode(46,OUTPUT);        // CAM TRIG
   #define SERVO_3_PIN_HIGH           PORTL |= 1<<3;
   #define SERVO_3_PIN_LOW            PORTL &= ~(1<<3);
+  #define SERVO_4_PINMODE            pinMode(11,OUTPUT);        // SERVO4 , use hardware PWM
+  #define SERVO_5_PINMODE            pinMode(12,OUTPUT);        // SERVO5 , use hardware PWM
+  #define GYR_CMPF_FACTOR 400.0f
+  #define GPS_SERIAL 2 
+  #define GPS_LED_INDICATOR
+  #define MINTHROTTLE 1140
+  #define SONAR_GENERIC_ECHOPULSE
+  #define SERVO_TILT
+  #define MPU6050_LPF_42HZ
+  #define ACC_LPF_FACTOR 5
 #endif
 
 #if defined(LADYBIRD)
@@ -1578,6 +1597,19 @@
 /**************************************************************************************/
 /***************              Sensor Type definitions              ********************/
 /**************************************************************************************/
+#if defined(SONAR_GENERIC_ECHOPULSE)
+  #define SONAR_GEP_TriggerPin             9
+  #define SONAR_GEP_TriggerPin_PINMODE_OUT pinMode(SONAR_GEP_TriggerPin,OUTPUT);
+  #define SONAR_GEP_TriggerPin_PIN_HIGH    PORTH |= 1<<6;
+  #define SONAR_GEP_TriggerPin_PIN_LOW     PORTH &= ~(1<<6);
+  #define SONAR_GEP_EchoPin                10
+  #define SONAR_GEP_EchoPin_PINMODE_IN     pinMode(SONAR_GEP_EchoPin,INPUT);
+  #define SONAR_GEP_EchoPin_PCINT          PCINT4
+  #define SONAR_GEP_EchoPin_PCICR          PCICR |= (1<<PCIE0); // PCINT 0-7 belong to PCIE0
+  #define SONAR_GEP_EchoPin_PCMSK          PCMSK0 = (1<<SONAR_GEP_EchoPin_PCINT); // Mask Pin PCINT5 - all other PIns PCINT0-7 are not allowed to create interrupts!
+  #define SONAR_GEP_EchoPin_PCINT_vect     PCINT0_vect  // PCINT0-7 belog PCINT0_vect
+  #define SONAR_GEP_EchoPin_PIN            PINB  // PCINT0-7 belong to PINB
+#endif
 
 #if defined(ADXL345) || defined(BMA020) || defined(BMA180) || defined(NUNCHACK) || defined(MMA7455) || defined(ADCACC) || defined(LIS3LV02) || defined(LSM303DLx_ACC) || defined(MPU6050) || defined(MMA8451Q) || defined(NUNCHUCK)
   #define ACC 1
@@ -1614,7 +1646,7 @@
   #define GPS 0
 #endif
 
-#if defined(SRF02) || defined(SRF08) || defined(SRF10) || defined(SRC235) || defined(TINY_GPS_SONAR) || defined(I2C_GPS_SONAR)
+#if defined(SRF02) || defined(SRF08) || defined(SRF10) || defined(SRC235) || defined(TINY_GPS_SONAR) || defined (SONAR_GENERIC_ECHOPULSE)
   #define SONAR 1
 #else
   #define SONAR 0

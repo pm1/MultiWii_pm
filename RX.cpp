@@ -62,7 +62,7 @@ void configureReceiver() {
           PCMSK0 = (1 << 0);
         #endif
         #if defined(RCAUXPIN12)
-          PCMSK0 = (1 << 4);
+          PCMSK0 |= (1 << 4);
         #endif
       #endif
     #endif
@@ -194,23 +194,39 @@ void configureReceiver() {
        bit 0 of PORT B, ie Arduino PIN 8
        or bit 4 of PORTB, ie Arduino PIN 12
      => no need to check which PIN has changed */
-    ISR(PCINT0_vect) {
-      uint8_t pin;
-      uint16_t cTime,dTime;
-      static uint16_t edgeTime;
-    
-      pin = PINB;
-      cTime = micros();
-      sei();
-      #if defined(RCAUXPIN8)
-       if (!(pin & 1<<0)) {     //indicates if the bit 0 of the arduino port [B0-B7] is not at a high state (so that we match here only descending PPM pulse)
-      #endif
-      #if defined(RCAUXPIN12)
-       if (!(pin & 1<<4)) {     //indicates if the bit 4 of the arduino port [B0-B7] is not at a high state (so that we match here only descending PPM pulse)
-      #endif
-        dTime = cTime-edgeTime; if (900<dTime && dTime<2200) rcValue[0] = dTime; // just a verification: the value must be in the range [1000;2000] + some margin
-      } else edgeTime = cTime;    // if the bit 2 is at a high state (ascending PPM pulse), we memorize the time
-    }
+      ISR(PCINT0_vect) {
+        uint8_t pin;
+        uint8_t mask;
+        uint16_t cTime,dTime;
+        static uint16_t edgeTime[2];
+        static uint8_t PCintLast;
+  
+        pin = PINB;
+        mask = pin ^ PCintLast;   // doing a ^ between the current interruption and the last one indicates wich pin changed
+        sei();                    // re enable other interrupts at this point, the rest of this interrupt is not so time critical and can be interrupted safely
+        PCintLast = pin;          // we memorize the current state of all PINs [D0-D7]
+        cTime = micros();
+        #if defined(RCAUXPIN8)
+         if (mask & 1<<0) {        //indicates the bit 1 of the arduino port [B1-B4], that is to say digital pin 15, if 1 => this pin has just changed
+           if (!(pin & 1<<0)) {     //indicates if the bit 0 of the arduino port [B0-B7] is not at a high state (so that we match here only descending PPM pulse)
+             dTime = cTime-edgeTime[0]; 
+             if (900<dTime && dTime<2200) { 
+               rcValue[0] = dTime; // just a verification: the value must be in the range [1000;2000] + some margin
+             }
+           } else edgeTime[0] = cTime;
+         }
+        #endif
+        #if defined(RCAUXPIN12)
+         if (mask & 1<<4) {        //indicates the bit 1 of the arduino port [B1-B4], that is to say digital pin 15, if 1 => this pin has just changed
+           if (!(pin & 1<<4)) {     //indicates if the bit 4 of the arduino port [B0-B7] is not at a high state (so that we match here only descending PPM pulse)
+             dTime = cTime-edgeTime[1]; 
+             if (900<dTime && dTime<2200) {
+	       rcValue[1] = dTime; // just a verification: the value must be in the range [1000;2000] + some margin
+             }
+           } else edgeTime[1] = cTime;
+         } 
+        #endif
+      }
     #endif
   #endif
   
