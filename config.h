@@ -120,7 +120,7 @@
       //#define DROTEK_10DOF_MPU//
       //#define MONGOOSE1_0     // mongoose 1.0    http://store.ckdevices.com/
       //#define CRIUS_LITE      // Crius MultiWii Lite
-      //#define CRIUS_SE        // Crius MultiWii SE
+      #define CRIUS_SE        // Crius MultiWii SE
       //#define CRIUS_SE_v2_0   // Crius MultiWii SE 2.0 with MPU6050, HMC5883 and BMP085
       //#define OPENLRSv2MULTI  // OpenLRS v2 Multi Rc Receiver board including ITG3205 and ADXL345
       //#define BOARD_PROTO_1   // with MPU6050 + HMC5883L + MS baro
@@ -133,7 +133,7 @@
       //#define INNOVWORKS_6DOF // with ITG3200, BMA180 available here http://www.diymulticopter.com
       //#define MultiWiiMega    // MEGA + MPU6050+HMC5883L+MS5611 available here http://www.diymulticopter.com
       //#define PROTO_DIY       // 10DOF mega board
-      #define IOI_MINI_MULTIWII// www.bambucopter.com
+      //#define IOI_MINI_MULTIWII// www.bambucopter.com
       //#define Bobs_6DOF_V1     // BobsQuads 6DOF V1 with ITG3200 & BMA180
       //#define Bobs_9DOF_V1     // BobsQuads 9DOF V1 with ITG3200, BMA180 & HMC5883L
       //#define Bobs_10DOF_BMP_V1 // BobsQuads 10DOF V1 with ITG3200, BMA180, HMC5883L & BMP180 - BMP180 is software compatible with BMP085
@@ -683,8 +683,8 @@
     /* GPS navigation can control the heading */
     
     #define NAV_CONTROLS_HEADING       false      // copter faces toward the navigation point, maghold must be enabled for it
-    #define NAV_TAIL_FIRST             true     // true - copter comes in with tail first 
-    #define NAV_SET_TAKEOFF_HEADING    true      // true - when copter arrives to home position it rotates it's head to takeoff direction
+    #define NAV_TAIL_FIRST             false     // true - copter comes in with tail first 
+    #define NAV_SET_TAKEOFF_HEADING    false      // true - when copter arrives to home position it rotates it's head to takeoff direction
     
     
     /* Get your magnetic declination from here : http://magnetic-declination.com/
@@ -845,10 +845,10 @@
 
     /* defines the neutral zone of throttle stick during altitude hold, default setting is
        +/-50 uncommend and change the value below if you want to change it. */
-    #define ALT_HOLD_THROTTLE_NEUTRAL_ZONE    50
+    #define ALT_HOLD_THROTTLE_NEUTRAL_ZONE    100
     //#define ALT_HOLD_THROTTLE_MIDPOINT        1500  // in us    - if uncommented, this value is used in ALT_HOLD for throttle stick middle point instead of initialThrottleHold parameter.
 
-
+ 
     /* uncomment to disable the altitude hold feature.
      * This is useful if all of the following apply
      * + you have a baro

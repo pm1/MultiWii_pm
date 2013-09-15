@@ -489,7 +489,8 @@ static struct {
   union {uint16_t val; uint8_t raw[2]; } ut; //uncompensated T
   union {uint32_t val; uint8_t raw[4]; } up; //uncompensated P
   uint8_t  state;
-  uint32_t deadline;
+  uint8_t last;
+  uint8_t delta;
 } bmp085_ctx;  
 #define OSS 3
 
@@ -510,7 +511,8 @@ void  Baro_init() {
   i2c_BMP085_readCalibration();
   delay(5);
   i2c_BMP085_UT_Start(); 
-  bmp085_ctx.deadline = currentTime+5000;
+  bmp085_ctx.delta = 5;
+  bmp085_ctx.last = millis();
 }
 
 // read uncompensated temperature value: send command first
@@ -576,21 +578,23 @@ void i2c_BMP085_Calculate() {
 
 //return 0: no data available, no computation ;  1: new value available  ; 2: no new value, but computation time
 uint8_t Baro_update() {                   // first UT conversion is started in init procedure
-  if (currentTime < bmp085_ctx.deadline) return 0; 
-  bmp085_ctx.deadline = currentTime+6000; // 1.5ms margin according to the spec (4.5ms T convetion time)
+  if ((uint8_t)((uint8_t) millis() - bmp085_ctx.last) <= bmp085_ctx.delta) return 0; 
   TWBR = ((F_CPU / 400000L) - 16) / 2; // change the I2C clock rate to 400kHz, BMP085 is ok with this speed
   if (bmp085_ctx.state == 0) {
     i2c_BMP085_UT_Read(); 
     i2c_BMP085_UP_Start(); 
-    bmp085_ctx.state = 1; 
     Baro_Common();
-    bmp085_ctx.deadline += 21000;   // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
+    bmp085_ctx.state = 1; 
+    bmp085_ctx.delta = 30;
+    bmp085_ctx.last = millis();
     return 1;
   } else {
     i2c_BMP085_UP_Read(); 
     i2c_BMP085_UT_Start(); 
     i2c_BMP085_Calculate(); 
     bmp085_ctx.state = 0; 
+    bmp085_ctx.delta = 5;
+    bmp085_ctx.last = millis();
     return 2;
   }
 }
@@ -624,7 +628,8 @@ static struct {
   union {uint32_t val; uint8_t raw[4]; } ut; //uncompensated T
   union {uint32_t val; uint8_t raw[4]; } up; //uncompensated P
   uint8_t  state;
-  uint32_t deadline;
+  uint8_t last;
+  uint8_t delta;
 } ms561101ba_ctx;
 
 void i2c_MS561101BA_reset(){
@@ -652,7 +657,7 @@ void  Baro_init() {
   i2c_MS561101BA_readCalibration();
   delay(10);
   i2c_MS561101BA_UT_Start(); 
-  ms561101ba_ctx.deadline = currentTime+10000; 
+  ms561101ba_ctx.last = millis(); 
 }
 
 // read uncompensated temperature value: send command first
@@ -717,19 +722,20 @@ void i2c_MS561101BA_Calculate() {
 
 //return 0: no data available, no computation ;  1: new value available  ; 2: no new value, but computation time
 uint8_t Baro_update() {                            // first UT conversion is started in init procedure
-  if (currentTime < ms561101ba_ctx.deadline) return 0; 
-  ms561101ba_ctx.deadline = currentTime+10000;  // UT and UP conversion take 8.5ms so we do next reading after 10ms 
+  if ((uint8_t)((uint8_t) millis() - ms561101ba_ctx.last) < 10) return 0; 
   TWBR = ((F_CPU / 400000L) - 16) / 2;          // change the I2C clock rate to 400kHz, MS5611 is ok with this speed
   if (ms561101ba_ctx.state == 0) {
     i2c_MS561101BA_UT_Read(); 
     i2c_MS561101BA_UP_Start(); 
     Baro_Common();                              // moved here for less timecycle spike
+    ms561101ba_ctx.last = millis();
     ms561101ba_ctx.state = 1;
     return 1;
   } else {
     i2c_MS561101BA_UP_Read();
     i2c_MS561101BA_UT_Start(); 
     i2c_MS561101BA_Calculate();
+    ms561101ba_ctx.last = millis();
     ms561101ba_ctx.state = 0; 
     return 2;
   }
@@ -737,17 +743,56 @@ uint8_t Baro_update() {                            // first UT conversion is sta
 #endif
 
 #if BARO
-  void Baro_Common() {
-    static int32_t baroHistTab[BARO_TAB_SIZE];
-    static uint8_t baroHistIdx;
+#if defined(BMP085)
+#define MAXCOUNT 30
+#define ANZP 10
+#define DEADDIFF 2
+#else
+#define MAXCOUNT 10
+#define ANZP 5
+#define DEADDIFF 1
+#endif
+
+void Baro_Common() {
+  static int32_t a_p[ANZP];
+  static int8_t ip;
+  static int16_t diff;
+  static int8_t last;
+  static int8_t count;
+
+  a_p[ip++] = baroPressure;
   
-    uint8_t indexplus1 = (baroHistIdx + 1);
-    if (indexplus1 == BARO_TAB_SIZE) indexplus1 = 0;
-    baroHistTab[baroHistIdx] = baroPressure;
-    baroPressureSum += baroHistTab[baroHistIdx];
-    baroPressureSum -= baroHistTab[indexplus1];
-    baroHistIdx = indexplus1;  
+  if (ip == ANZP) {
+    ip = 0;
   }
+      
+  diff = baroPressure - EstPressure;
+  if (abs(diff) > DEADDIFF) {
+    if (diff > 0) {
+      if (last < 0) {
+        last = 0; 
+      }
+      last++;
+    }
+    else {
+      if (last > 0) {
+        last = 0;
+      }
+      last--;
+    }
+    count += last;
+  }
+
+  if (abs(count) >= MAXCOUNT) {
+    EstPressure = 0;
+    for (int8_t i = 0; i < ANZP; i++) {
+      EstPressure += a_p[i];
+    }
+    EstPressure /= ANZP;
+    count = 0;
+    last = 0;
+  }
+}
 #endif
 
 
@@ -1742,10 +1787,8 @@ void Sonar_update() {
   if (SONAR_GEP_new_value) {
     SONAR_GEP_new_value= 0;
  
-    debug[3] = SONAR_GEP_echoTime;
     if (SONAR_GEP_echoTime < (SONAR_GENERIC_MAX_RANGE * SONAR_GENERIC_SCALE)) {
       sonarAlt = SONAR_GEP_echoTime / SONAR_GENERIC_SCALE;
-      debug[3] = (SONAR_GEP_echoTime * 10) / SONAR_GENERIC_SCALE;
       last_good = millis();       
     }
     

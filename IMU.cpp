@@ -246,7 +246,8 @@ void getEstimatedAttitude(){
   #endif
 }
 
-#define UPDATE_INTERVAL 25000    // 40hz update rate (20hz LPF on acc)
+#define UPDATE_INTERVAL 25    // 40hz update rate (20hz LPF on acc)
+#define INIT_DELAY      100  // 4 sec initialization delay
 #define BARO_TAB_SIZE   21
 
 #define ACC_Z_DEADBAND (ACC_1G>>5) // was 40 instead of 32 now
@@ -263,39 +264,51 @@ void getEstimatedAttitude(){
 
 #if BARO
 uint8_t getEstimatedAltitude(){
-  int32_t  BaroAlt;
+  static uint8_t deadLine = INIT_DELAY;
+  int16_t error;
   static int32_t baroGroundPressure;
+  static int32_t LastAlt;
+  static float baroGroundTemperatureScale;
   static float vel = 0.0f;
-  static uint16_t previousT;
-  uint16_t currentT = micros();
-  uint16_t dTime;
+  uint32_t dTime;
 
-  dTime = currentT - previousT;
-  if (dTime < UPDATE_INTERVAL) return 0;
-  previousT = currentT;
+  if ((uint8_t)((uint8_t) millis() - deadLine) <= UPDATE_INTERVAL) 
+    return 0;
+  dTime= (millis() - deadLine) * 1000;
+  deadLine = millis();
 
   if(calibratingB > 0) {
-    baroGroundPressure = baroPressureSum/(BARO_TAB_SIZE - 1);
+    if (EstPressure) {
+      baroGroundPressure = EstPressure;
+      baroGroundTemperatureScale = (baroTemperature + 27315) *  29.271267f;
+    }
     calibratingB--;
   }
 
   // pressure relative to ground pressure with temperature compensation (fast!)
   // baroGroundPressure is not supposed to be 0 here
   // see: https://code.google.com/p/ardupilot-mega/source/browse/libraries/AP_Baro/AP_Baro.cpp
-  BaroAlt = log( baroGroundPressure * (BARO_TAB_SIZE - 1)/ (float)baroPressureSum ) * (baroTemperature+27315) * 29.271267f; // in cemtimeter 
-
-  alt.EstAlt = (alt.EstAlt * 6 + BaroAlt * 2) >> 3; // additional LPF to reduce baro noise (faster by 30 µs)
+  alt.EstAlt = log( ( (float) baroGroundPressure) / EstPressure ) * baroGroundTemperatureScale; // in cemtimeter 
 
   #if (defined(VARIOMETER) && (VARIOMETER != 2)) || !defined(SUPPRESS_BARO_ALTHOLD)
+
+    error = AltHold - alt.EstAlt;
+	  
+    //D
+    BaroPID=conf.pid[PIDALT].D8*(LastAlt-alt.EstAlt) / 40;
+    LastAlt = (9 * LastAlt + alt.EstAlt) / 10;
+  
     //P
-    int16_t error16 = constrain(AltHold - alt.EstAlt, -300, 300);
-    applyDeadband(error16, 10); //remove small P parametr to reduce noise near zero position
-    BaroPID = constrain((conf.pid[PIDALT].P8 * error16 >>7), -150, +150);
+    BaroPID += 1L * conf.pid[PIDALT].P8 * constrain(error,-20*conf.pid[PIDALT].P8,20*conf.pid[PIDALT].P8) /100;
+    BaroPID = constrain(BaroPID,-150,+150); //sum of P and D should be in range 150
 
     //I
-    errorAltitudeI += conf.pid[PIDALT].I8 * error16 >>6;
+    error = constrain(error,-100,100);
+    errorAltitudeI += error*conf.pid[PIDALT].I8/50;
     errorAltitudeI = constrain(errorAltitudeI,-30000,30000);
-    BaroPID += errorAltitudeI>>9; //I in range +/-60
+    error = errorAltitudeI / 500; //I in range +/-60
+
+    BaroPID+=error;
  
     // projection of ACC vector to global Z, with 1G subtructed
     // Math: accZ = A * G / |G| - 1G
@@ -310,8 +323,7 @@ uint8_t getEstimatedAltitude(){
     applyDeadband(accZ, ACC_Z_DEADBAND);
 
     static int32_t lastBaroAlt;
-    //int16_t baroVel = (alt.EstAlt - lastBaroAlt) * 1000000.0f / dTime;
-    int16_t baroVel = (alt.EstAlt - lastBaroAlt) * (1000000 / UPDATE_INTERVAL);
+    int16_t baroVel = (alt.EstAlt - lastBaroAlt) * (1000 / UPDATE_INTERVAL);
     lastBaroAlt = alt.EstAlt;
 
     baroVel = constrain(baroVel, -300, 300); // constrain baro velocity +/- 300cm/s
@@ -324,10 +336,7 @@ uint8_t getEstimatedAltitude(){
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
     vel = vel * 0.985f + baroVel * 0.015f;
 
-    //D
     alt.vario = vel;
-    applyDeadband(alt.vario, 5);
-    BaroPID -= constrain(conf.pid[PIDALT].D8 * alt.vario >>4, -150, 150);
   #endif
   return 1;
 }

@@ -327,7 +327,7 @@ conf_t conf;
 #if BARO
   int32_t baroPressure;
   int32_t baroTemperature;
-  int32_t baroPressureSum;
+  int32_t EstPressure;
 #endif
 
 void annexCode() { // this code is excetuted at each loop and won't interfere with control loop if it lasts less than 650 microseconds
@@ -1172,7 +1172,6 @@ void loop () {
           AltHold += AltHoldCorr/512;
           AltHoldCorr %= 512;
         }
-        errorAltitudeI = 0;
         isAltHoldChanged = 1;
       } else if (isAltHoldChanged) {
         AltHold = alt.EstAlt;
