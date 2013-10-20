@@ -281,7 +281,8 @@ uint8_t getEstimatedAltitude(){
   if(calibratingB > 0) {
     if (EstPressure) {
       baroGroundPressure = EstPressure;
-      baroGroundTemperatureScale = (baroTemperature + 27315) *  29.271267f;
+//      baroGroundTemperatureScale = (baroTemperature + 27315) *  29.271267f;
+      baroGroundTemperatureScale = (1500 + 27315) *  29.271267f;
     }
     calibratingB--;
   }
@@ -294,12 +295,14 @@ uint8_t getEstimatedAltitude(){
   #if (defined(VARIOMETER) && (VARIOMETER != 2)) || !defined(SUPPRESS_BARO_ALTHOLD)
 
     error = AltHold - alt.EstAlt;
-	  
-
-    debug[3] = error;
     
     //D
-    BaroPID=conf.pid[PIDALT].D8*(LastAlt-alt.EstAlt) / 40;
+    if (error > 20) {
+      BaroPID=conf.pid[PIDALT].D8*(LastAlt-alt.EstAlt) / 40;
+    }
+    else {
+      BaroPID=0;
+    } 
     debug[2] = BaroPID; 
     LastAlt = (9 * LastAlt + alt.EstAlt) / 10;
   
@@ -337,6 +340,8 @@ uint8_t getEstimatedAltitude(){
     applyDeadband(baroVel, 10); // to reduce noise near zero
 
     // Integrator - velocity, cm/sec
+    debug[3] = accZ * ACC_VelScale * dTime * 1000;
+    
     vel += accZ * ACC_VelScale * dTime * 1000;
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity). 
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay

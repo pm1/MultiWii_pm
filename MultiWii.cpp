@@ -769,7 +769,6 @@ void loop () {
 #endif
   static uint32_t rcTime  = 0;
   static int16_t initialThrottleHold;
-  static uint32_t timestamp_fixated = 0;
   int16_t rc;
   int32_t prop = 0;
 
@@ -1150,7 +1149,7 @@ void loop () {
  //*********************************** 
  
   #if MAG
-    if (abs(rcCommand[YAW]) <70 && f.MAG_MODE) {
+    if (abs(rcCommand[YAW]) <30 && f.MAG_MODE) {
       int16_t dif = att.heading - magHold;
       if (dif <= - 180) dif += 360;
       if (dif >= + 180) dif -= 360;

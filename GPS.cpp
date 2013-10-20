@@ -832,7 +832,7 @@ static void GPS_calc_location_error( int32_t* target_lat, int32_t* target_lng, i
 // Calculate nav_lat and nav_lon from the x and y error and the speed
 //
 static void GPS_calc_poshold(void) {
-  int32_t d;
+//  int32_t d;
   int32_t target_speed;
   uint8_t axis;
   
