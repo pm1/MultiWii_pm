@@ -1194,7 +1194,7 @@
   #define MAG_ORIENTATION(X, Y, Z)  {imu.magADC[ROLL]  =  X; imu.magADC[PITCH]  =  Y; imu.magADC[YAW]  = -Z;}
   #define MINTHROTTLE 1160 
   #define ITG3200_LPF_42HZ
-  #define GYR_CMPF_FACTOR 500.0f
+  #define GYR_CMPF_FACTOR 9
   #define ACC_LPF_FACTOR 5
   #define I2C_GPS
 #endif
@@ -1319,7 +1319,7 @@
   #define MINTHROTTLE 1250 
   #define ITG3200_LPF_42HZ
   #define ACC_LPF_FACTOR 5
-  #define GYR_CMPF_FACTOR 500.0f
+  #define GYR_CMPF_FACTOR 9
 #endif
 
 #if defined(Bobs_6DOF_V1)
@@ -1397,7 +1397,7 @@
   #define SERVO_3_PIN_LOW            PORTL &= ~(1<<3);
   #define SERVO_4_PINMODE            pinMode(11,OUTPUT);        // SERVO4 , use hardware PWM
   #define SERVO_5_PINMODE            pinMode(12,OUTPUT);        // SERVO5 , use hardware PWM
-  #define GYR_CMPF_FACTOR 400.0f
+  #define GYR_CMPF_FACTOR 9
   #define GPS_SERIAL 2 
   #define GPS_LED_INDICATOR
   #define MINTHROTTLE 1140

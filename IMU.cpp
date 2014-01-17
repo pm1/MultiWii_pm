@@ -284,6 +284,16 @@ void getEstimatedAttitude(){
     cosZ = mul(EstG.V16.Z , 100) / ACC_1G ;                                                   // cos(angleZ) * 100 
     throttleAngleCorrection = THROTTLE_ANGLE_CORRECTION * constrain(100 - cosZ, 0, 100) >>3;  // 16 bit ok: 200*150 = 30000  
   #endif
+  
+  // projection of ACC vector to global Z, with 1G subtructed
+  // Math: accZ = A * G / |G| - 1G
+  accZ = accZ_tmp *  invG;
+  if (!f.ARMED) {
+    accZoffset -= accZoffset>>3;
+    accZoffset += accZ;
+  }  
+  accZ -= accZoffset>>3;
+
 }
 
 #define UPDATE_INTERVAL 25    // 40hz update rate (20hz LPF on acc)
@@ -360,10 +370,7 @@ uint8_t getEstimatedAltitude(){
 
     BaroPID+=error;
  
-    // projection of ACC vector to global Z, with 1G subtructed
-    // Math: accZ = A * G / |G| - 1G
-    int16_t accZ = (imu.accSmooth[ROLL] * EstG32.V.X + imu.accSmooth[PITCH] * EstG32.V.Y + imu.accSmooth[YAW] * EstG32.V.Z) * invG;
-
+ 
     static int16_t accZoffset = 0;
     if (!f.ARMED) {
       accZoffset -= accZoffset>>3;

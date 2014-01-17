@@ -71,7 +71,7 @@ extern int16_t angle[2];
 #if BARO
   extern int32_t baroPressure;
   extern int16_t baroTemperature; // temp in 0.01 deg
-  extern int32_t baroPressureSum;
+  extern int32_t EstPressure;
 #endif
 
 extern int16_t axisPID[3];
