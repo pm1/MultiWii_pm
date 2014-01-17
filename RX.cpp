@@ -5,6 +5,7 @@
 #include "Serial.h"
 #include "Protocol.h"
 #include "MultiWii.h"
+#include "Alarms.h"
 
 /**************************************************************************************/
 /***************             Global RX related variables           ********************/
@@ -316,30 +317,30 @@ void configureReceiver() {
 void  readSBus(){
   #define SBUS_SYNCBYTE 0x0F // Not 100% sure: at the beginning of coding it was 0xF0 !!!
   static uint16_t sbus[25]={0};
-  while(SerialAvailable(1)){
-    int val = SerialRead(1);
+  while(SerialAvailable(SBUS_SERIAL_PORT)){
+    int val = SerialRead(SBUS_SERIAL_PORT);
     if(sbusIndex==0 && val != SBUS_SYNCBYTE)
       continue;
     sbus[sbusIndex++] = val;
     if(sbusIndex==25){
       sbusIndex=0;
-      rcValue[0]  = ((sbus[1]|sbus[2]<< 8) & 0x07FF)/2+976; // Perhaps you may change the term "/2+976" -> center will be 1486
-      rcValue[1]  = ((sbus[2]>>3|sbus[3]<<5) & 0x07FF)/2+976; 
-      rcValue[2]  = ((sbus[3]>>6|sbus[4]<<2|sbus[5]<<10) & 0x07FF)/2+976; 
-      rcValue[3]  = ((sbus[5]>>1|sbus[6]<<7) & 0x07FF)/2+976; 
-      rcValue[4]  = ((sbus[6]>>4|sbus[7]<<4) & 0x07FF)/2+976; 
-      rcValue[5]  = ((sbus[7]>>7|sbus[8]<<1|sbus[9]<<9) & 0x07FF)/2+976;
-      rcValue[6]  = ((sbus[9]>>2|sbus[10]<<6) & 0x07FF)/2+976; 
-      rcValue[7]  = ((sbus[10]>>5|sbus[11]<<3) & 0x07FF)/2+976; // & the other 8 + 2 channels if you need them
+      rcValue[0]  = ((sbus[1]|sbus[2]<< 8) & 0x07FF)/2+SBUS_MID_OFFSET;
+      rcValue[1]  = ((sbus[2]>>3|sbus[3]<<5) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[2]  = ((sbus[3]>>6|sbus[4]<<2|sbus[5]<<10) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[3]  = ((sbus[5]>>1|sbus[6]<<7) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[4]  = ((sbus[6]>>4|sbus[7]<<4) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[5]  = ((sbus[7]>>7|sbus[8]<<1|sbus[9]<<9) & 0x07FF)/2+SBUS_MID_OFFSET;
+      rcValue[6]  = ((sbus[9]>>2|sbus[10]<<6) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[7]  = ((sbus[10]>>5|sbus[11]<<3) & 0x07FF)/2+SBUS_MID_OFFSET; // & the other 8 + 2 channels if you need them
       //The following lines: If you need more than 8 channels, max 16 analog + 2 digital. Must comment the not needed channels!
-      rcValue[8]  = ((sbus[12]|sbus[13]<< 8) & 0x07FF)/2+976; 
-      rcValue[9]  = ((sbus[13]>>3|sbus[14]<<5) & 0x07FF)/2+976; 
-      rcValue[10] = ((sbus[14]>>6|sbus[15]<<2|sbus[16]<<10) & 0x07FF)/2+976; 
-      rcValue[11] = ((sbus[16]>>1|sbus[17]<<7) & 0x07FF)/2+976; 
-      rcValue[12] = ((sbus[17]>>4|sbus[18]<<4) & 0x07FF)/2+976; 
-      rcValue[13] = ((sbus[18]>>7|sbus[19]<<1|sbus[20]<<9) & 0x07FF)/2+976; 
-      rcValue[14] = ((sbus[20]>>2|sbus[21]<<6) & 0x07FF)/2+976; 
-      rcValue[15] = ((sbus[21]>>5|sbus[22]<<3) & 0x07FF)/2+976; 
+      rcValue[8]  = ((sbus[12]|sbus[13]<< 8) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[9]  = ((sbus[13]>>3|sbus[14]<<5) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[10] = ((sbus[14]>>6|sbus[15]<<2|sbus[16]<<10) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[11] = ((sbus[16]>>1|sbus[17]<<7) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[12] = ((sbus[17]>>4|sbus[18]<<4) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[13] = ((sbus[18]>>7|sbus[19]<<1|sbus[20]<<9) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[14] = ((sbus[20]>>2|sbus[21]<<6) & 0x07FF)/2+SBUS_MID_OFFSET; 
+      rcValue[15] = ((sbus[21]>>5|sbus[22]<<3) & 0x07FF)/2+SBUS_MID_OFFSET; 
       // now the two Digital-Channels
       if ((sbus[23]) & 0x0001)       rcValue[16] = 2000; else rcValue[16] = 1000;
       if ((sbus[23] >> 1) & 0x0001)  rcValue[17] = 2000; else rcValue[17] = 1000;
@@ -394,7 +395,6 @@ void readSpektrum(void) {
   }
 }
 #endif
-
 
 uint16_t readRawRC(uint8_t chan) {
   uint16_t data;
@@ -502,71 +502,6 @@ static uint16_t temp_int;
 static uint16_t Servo_Buffer[10] = {3000,3000,3000,3000,3000,3000,3000,3000};   //servo position values from RF
 static uint8_t hopping_channel = 1;
 
-void initOpenLRS(void) {
-  pinMode(GREEN_LED_pin, OUTPUT);  
-  pinMode(RED_LED_pin, OUTPUT);
-      
-  //RF module pins
-  pinMode(SDO_pin, INPUT); //SDO
-  pinMode(SDI_pin, OUTPUT); //SDI        
-  pinMode(SCLK_pin, OUTPUT); //SCLK
-  pinMode(IRQ_pin, INPUT); //IRQ
-  pinMode(nSel_pin, OUTPUT); //nSEL
-  checkPots(); // OpenLRS Multi board hardware pot check;
-} 
-
-void Config_OpenLRS() {
-  RF22B_init_parameter(); // Configure the RFM22B's registers
-  frequency_configurator(CARRIER_FREQUENCY); // Calibrate the RFM22B to this frequency, frequency hopping starts from here.
-  to_rx_mode(); 
-  #if (FREQUENCY_HOPPING==1)
-   Hopping(); //Hop to the next frequency
-  #endif  
-}
-
-//############ MAIN LOOP ##############
-void Read_OpenLRS_RC() {
-  uint8_t i,tx_data_length;
-  uint8_t first_data = 0;
-
-  if (_spi_read(0x0C)==0) {RF22B_init_parameter(); to_rx_mode(); }// detect the locked module and reboot                         
-  if ((currentTime-last_hopping_time > 25000)) {//automatic hopping for clear channel when rf link down for 25ms. 
-    Red_LED_ON;
-    last_hopping_time = currentTime;  
-    #if (FREQUENCY_HOPPING==1)
-      Hopping(); //Hop to the next frequency
-    #endif   
-  }
-  if(nIRQ_0) { // RFM22B INT pin Enabled by received Data
-    Red_LED_ON;                                 
-    send_read_address(0x7f); // Send the package read command
-    for(i = 0; i<17; i++) {//read all buffer 
-      RF_Rx_Buffer[i] = read_8bit_data(); 
-    }  
-    rx_reset();
-    if (RF_Rx_Buffer[0] == 'S') {// servo control data
-      for(i = 0; i<8; i++) {//Write into the Servo Buffer                                                       
-        temp_int = (256*RF_Rx_Buffer[1+(2*i)]) + RF_Rx_Buffer[2+(2*i)];
-        if ((temp_int>1500) && (temp_int<4500)) Servo_Buffer[i] = temp_int/2;                                                                                                           
-      }
-      rcData[ROLL] = Servo_Buffer[0];
-      rcData[PITCH] = Servo_Buffer[1];
-      rcData[THROTTLE] = Servo_Buffer[2];
-      rcData[YAW] = Servo_Buffer[3]; 
-      rcData[AUX1] = Servo_Buffer[4]; 
-      rcData[AUX2] = Servo_Buffer[5]; 
-      rcData[AUX3] = Servo_Buffer[6]; 
-      rcData[AUX4] = Servo_Buffer[7];  
-    }
-    #if (FREQUENCY_HOPPING==1)
-      Hopping(); //Hop to the next frequency
-    #endif  
-    delay(1);              
-    last_hopping_time = currentTime;    
-    Red_LED_OFF;
-  }
-  Red_LED_OFF;
-}
 
 // **********************************************************
 // **      RFM22B/Si4432 control functions for OpenLRS     **
@@ -580,6 +515,7 @@ void Read_OpenLRS_RC() {
 
 //***************************************************************************** 
 //*****************************************************************************  
+unsigned char ItStatus1, ItStatus2;  
 
 //-------------------------------------------------------------- 
 void Write0( void ) { 
@@ -616,6 +552,45 @@ void Write8bitcommand(uint8_t command) {  // keep sel to low
 }  
 
 //-------------------------------------------------------------- 
+void send_read_address(uint8_t i) { 
+  i &= 0x7f; 
+  Write8bitcommand(i); 
+}  
+
+//-------------------------------------------------------------- 
+void send_8bit_data(uint8_t i) { 
+  uint8_t n = 8; 
+  SCK_off;
+  while(n--) { 
+    if(i&0x80) 
+      Write1(); 
+    else 
+      Write0();    
+    i = i << 1; 
+  } 
+  SCK_off;
+}  
+//-------------------------------------------------------------- 
+
+uint8_t read_8bit_data(void) {
+  uint8_t Result, i; 
+  
+  SCK_off;
+  Result=0; 
+  for(i=0;i<8;i++) {                    //read fifo data byte 
+    Result=Result<<1; 
+    SCK_on;
+    NOP(); 
+    if(SDO_1) { 
+      Result|=1;
+    } 
+    SCK_off;
+    NOP(); 
+  } 
+  return(Result); 
+}  
+
+//-------------------------------------------------------------- 
 uint8_t _spi_read(uint8_t address) { 
   uint8_t result; 
   send_read_address(address); 
@@ -631,7 +606,6 @@ void _spi_write(uint8_t address, uint8_t data) {
   send_8bit_data(data);  
   nSEL_on;
 }  
-
 
 //-------Defaults 38.400 baud---------------------------------------------- 
 void RF22B_init_parameter(void) { 
@@ -701,44 +675,31 @@ void RF22B_init_parameter(void) {
   _spi_write(0x77, 0x00); 
 }
 
-//-------------------------------------------------------------- 
-void send_read_address(uint8_t i) { 
-  i &= 0x7f; 
-  Write8bitcommand(i); 
-}  
-//-------------------------------------------------------------- 
-void send_8bit_data(uint8_t i) { 
-  uint8_t n = 8; 
-  SCK_off;
-  while(n--) { 
-    if(i&0x80) 
-      Write1(); 
-    else 
-      Write0();    
-    i = i << 1; 
-  } 
-  SCK_off;
-}  
-//-------------------------------------------------------------- 
 
-uint8_t read_8bit_data(void) {
-  uint8_t Result, i; 
+void checkPots() {
+  ////Flytron OpenLRS Multi Pots
+  pot_P = analogRead(7);
+  pot_I = analogRead(6);
   
-  SCK_off;
-  Result=0; 
-  for(i=0;i<8;i++) {                    //read fifo data byte 
-    Result=Result<<1; 
-    SCK_on;
-    NOP(); 
-    if(SDO_1) { 
-      Result|=1;
-    } 
-    SCK_off;
-    NOP(); 
-  } 
-  return(Result); 
-}  
-//-------------------------------------------------------------- 
+  pot_P = pot_P - 512;
+  pot_I = pot_I - 512;
+  
+  pot_P = pot_P / 25; //+-20
+  pot_I = pot_I / 25; //+-20
+}
+
+void initOpenLRS(void) {
+  pinMode(GREEN_LED_pin, OUTPUT);  
+  pinMode(RED_LED_pin, OUTPUT);
+      
+  //RF module pins
+  pinMode(SDO_pin, INPUT); //SDO
+  pinMode(SDI_pin, OUTPUT); //SDI        
+  pinMode(SCLK_pin, OUTPUT); //SCLK
+  pinMode(IRQ_pin, INPUT); //IRQ
+  pinMode(nSel_pin, OUTPUT); //nSEL
+  checkPots(); // OpenLRS Multi board hardware pot check;
+} 
 
 //----------------------------------------------------------------------- 
 void rx_reset(void) { 
@@ -753,6 +714,13 @@ void rx_reset(void) {
 }  
 //-----------------------------------------------------------------------    
 
+//-------------------------------------------------------------- 
+void to_ready_mode(void) { 
+  ItStatus1 = _spi_read(0x03);   
+  ItStatus2 = _spi_read(0x04); 
+  _spi_write(0x07, RF22B_PWRSTATE_READY); 
+}  
+
 void to_rx_mode(void) {  
   to_ready_mode(); 
   delay(50); 
@@ -760,13 +728,6 @@ void to_rx_mode(void) {
   NOP(); 
 }  
 
-
-//-------------------------------------------------------------- 
-void to_ready_mode(void) { 
-  ItStatus1 = _spi_read(0x03);   
-  ItStatus2 = _spi_read(0x04); 
-  _spi_write(0x07, RF22B_PWRSTATE_READY); 
-}  
 //-------------------------------------------------------------- 
 void to_sleep_mode(void) { 
   //  TXEN = RXEN = 0; 
@@ -778,7 +739,7 @@ void to_sleep_mode(void) {
   _spi_write(0x07, RF22B_PWRSTATE_POWERDOWN); 
 } 
 //--------------------------------------------------------------   
-  
+
 void frequency_configurator(uint32_t frequency) {
   // frequency formulation from Si4432 chip's datasheet
   // original formulation is working with mHz values and floating numbers, I replaced them with kHz values.
@@ -803,18 +764,60 @@ void Hopping(void) {
 }
 #endif
 
-void checkPots() {
-  ////Flytron OpenLRS Multi Pots
-  pot_P = analogRead(7);
-  pot_I = analogRead(6);
-  
-  pot_P = pot_P - 512;
-  pot_I = pot_I - 512;
-  
-  pot_P = pot_P / 25; //+-20
-  pot_I = pot_I / 25; //+-20
+void Config_OpenLRS() {
+  RF22B_init_parameter(); // Configure the RFM22B's registers
+  frequency_configurator(CARRIER_FREQUENCY); // Calibrate the RFM22B to this frequency, frequency hopping starts from here.
+  to_rx_mode(); 
+  #if (FREQUENCY_HOPPING==1)
+    Hopping(); //Hop to the next frequency
+  #endif  
+}
+
+//############ MAIN LOOP ##############
+void Read_OpenLRS_RC() {
+  uint8_t i,tx_data_length;
+  uint8_t first_data = 0;
+
+  if (_spi_read(0x0C)==0) {RF22B_init_parameter(); to_rx_mode(); }// detect the locked module and reboot                         
+  if ((currentTime-last_hopping_time > 25000)) {//automatic hopping for clear channel when rf link down for 25ms. 
+    Red_LED_ON;
+    last_hopping_time = currentTime;  
+    #if (FREQUENCY_HOPPING==1)
+      Hopping(); //Hop to the next frequency
+    #endif   
+  }
+  if(nIRQ_0) { // RFM22B INT pin Enabled by received Data
+    Red_LED_ON;                                 
+    send_read_address(0x7f); // Send the package read command
+    for(i = 0; i<17; i++) {//read all buffer 
+      RF_Rx_Buffer[i] = read_8bit_data(); 
+    }  
+    rx_reset();
+    if (RF_Rx_Buffer[0] == 'S') {// servo control data
+      for(i = 0; i<8; i++) {//Write into the Servo Buffer                                                       
+        temp_int = (256*RF_Rx_Buffer[1+(2*i)]) + RF_Rx_Buffer[2+(2*i)];
+        if ((temp_int>1500) && (temp_int<4500)) Servo_Buffer[i] = temp_int/2;                                                                                                           
+      }
+      rcData[ROLL] = Servo_Buffer[0];
+      rcData[PITCH] = Servo_Buffer[1];
+      rcData[THROTTLE] = Servo_Buffer[2];
+      rcData[YAW] = Servo_Buffer[3]; 
+      rcData[AUX1] = Servo_Buffer[4]; 
+      rcData[AUX2] = Servo_Buffer[5]; 
+      rcData[AUX3] = Servo_Buffer[6]; 
+      rcData[AUX4] = Servo_Buffer[7];  
+    }
+    #if (FREQUENCY_HOPPING==1)
+      Hopping(); //Hop to the next frequency
+    #endif  
+    delay(1);              
+    last_hopping_time = currentTime;    
+    Red_LED_OFF;
+  }
+  Red_LED_OFF;
 }
 #endif
+
 
 #if defined(SPEK_BIND)  // Bind Support
 void spekBind() {
@@ -855,6 +858,3 @@ void spekBind() {
   }
 }
 #endif
-
-
-

@@ -1,7 +1,7 @@
 #ifndef MULTIWII_H_
 #define MULTIWII_H_
 
-#define  VERSION  221
+#define  VERSION  230
 
 #include "types.h"
 
@@ -70,8 +70,8 @@ extern int16_t angle[2];
 
 #if BARO
   extern int32_t baroPressure;
-  extern int32_t baroTemperature;
-  extern int32_t EstPressure;
+  extern int16_t baroTemperature; // temp in 0.01 deg
+  extern int32_t baroPressureSum;
 #endif
 
 extern int16_t axisPID[3];
@@ -172,6 +172,10 @@ extern int16_t lookupThrottleRC[11];
 
   extern volatile uint8_t  spekFrameFlags;
   extern volatile uint32_t spekTimeLast;
+
+  #if defined(OPENLRSv2MULTI)
+    extern uint8_t pot_P,pot_I; // OpenLRS onboard potentiometers for P and I trim or other usages
+  #endif
 
   // **********************
   //Automatic ACC Offset Calibration
