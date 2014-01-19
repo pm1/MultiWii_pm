@@ -1401,8 +1401,8 @@
   #define GPS_SERIAL 2 
   #define GPS_LED_INDICATOR
   #define MINTHROTTLE 1140
-  #define SONAR_GENERIC_ECHOPULSE
-  #define SERVO_TILT
+//  #define SONAR_GENERIC_ECHOPULSE
+//  #define SERVO_TILT
   #define MPU6050_LPF_42HZ
   #define ACC_LPF_FACTOR 5
 #endif

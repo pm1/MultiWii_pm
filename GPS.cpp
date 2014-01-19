@@ -354,7 +354,7 @@ void GPS_NewData(void) {
       *varptr   = i2c_readNak();
     #endif	
     
-    if (_i2c_gps_status & I2C_GPS_STATUS_3DFIX) {                                     //Check is we have a good 3d fix (numsats>5)
+    if ((_i2c_gps_status & I2C_GPS_STATUS_3DFIX) && (GPS_numSat >= 5)) {                                     //Check is we have a good 3d fix (numsats>5)
       f.GPS_FIX = 1;
 
       #if !defined(DONT_RESET_HOME_AT_ARM)
@@ -477,7 +477,7 @@ void GPS_NewData(void) {
         GPS_update &= 1;    // We have: GPS_fix(0-2), GPS_numSat(0-15), GPS_coord[LAT & LON](signed, in 1/10 000 000 degres), GPS_altitude(signed, in meters) and GPS_speed(in cm/s)                     
     #endif
        if (GPS_update == 1) GPS_update = 0; else GPS_update = 1;
-        if (f.GPS_FIX && GPS_numSat >= 5) {
+        if (f.GPS_FIX) {
 
           #if !defined(DONT_RESET_HOME_AT_ARM)
             if (!f.ARMED) {f.GPS_FIX_HOME = 0;}
@@ -573,7 +573,7 @@ void GPS_NewData(void) {
 }
 
 void GPS_reset_home_position(void) {
-  if (f.GPS_FIX && GPS_numSat >= 5) {
+  if (f.GPS_FIX) {
     #if defined(I2C_GPS)
       //set current position as home
       GPS_I2C_command(I2C_GPS_COMMAND_SET_WP,0);  //WP0 is the home position
@@ -1073,6 +1073,9 @@ bool GPS_newFrame(char c) {
        if (!checksum_param) parity ^= c;
     }
     if (frame) GPS_Present = 1;
+    
+    f.GPS_FIX = frameOK && f.GPS_FIX && (GPS_numSat >= 5);
+    
     return frameOK && (frame==FRAME_GGA);
   }
 #endif //NMEA
@@ -1255,7 +1258,7 @@ bool GPS_newFrame(char c) {
         GPS_coord[LAT] = _buffer.posllh.latitude;
         GPS_altitude   = _buffer.posllh.altitude_msl / 1000;      //alt in m
       }
-      f.GPS_FIX = _fix_ok;
+      f.GPS_FIX = _fix_ok && (GPS_numSat >= 5);
       return true;        // POSLLH message received, allow blink GUI icon and LED
       break;
     case MSG_SOL:
@@ -1406,7 +1409,7 @@ restart:
                 break;
             }
 
-            f.GPS_FIX                   = ((_buffer.msg.fix_type == FIX_3D) || (_buffer.msg.fix_type == FIX_3D_SBAS));
+            f.GPS_FIX                   = (((_buffer.msg.fix_type == FIX_3D) || (_buffer.msg.fix_type == FIX_3D_SBAS))) && (GPS_numSat >= 5);
 
 #if defined(MTK_BINARY16)
             GPS_coord[LAT]              = _buffer.msg.latitude * 10;    // XXX doc says *10e7 but device says otherwise

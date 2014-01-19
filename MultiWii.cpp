@@ -519,7 +519,7 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
     static uint32_t GPSLEDTime;              // - No GPS FIX -> LED blink at speed of incoming GPS frames
     static uint8_t blcnt;                    // - Fix and sat no. bellow 5 -> LED off
     if(currentTime > GPSLEDTime) {           // - Fix and sat no. >= 5 -> LED blinks, one blink for 5 sat, two blinks for 6 sat, three for 7 ...
-      if(f.GPS_FIX && GPS_numSat >= 5) {
+      if(f.GPS_FIX) {
         if(++blcnt > 2*GPS_numSat) blcnt = 0;
         GPSLEDTime = currentTime + 150000;
         if(blcnt >= 10 && ((blcnt%2) == 0)) {STABLEPIN_ON;} else {STABLEPIN_OFF;}
@@ -1020,7 +1020,7 @@ void loop () {
           f.HEADFREE_MODE = 1;
         }
 	  #if defined(ADVANCED_HEADFREE)
-		if ((f.GPS_FIX && GPS_numSat >= 5) && (GPS_distanceToHome > ADV_HEADFREE_RANGE) ) {
+		if (f.GPS_FIX && (GPS_distanceToHome > ADV_HEADFREE_RANGE) ) {
             if (GPS_directionToHome < 180)  {headFreeModeHold = GPS_directionToHome + 180;} else {headFreeModeHold = GPS_directionToHome - 180;}
          }
       #endif
@@ -1034,33 +1034,37 @@ void loop () {
     
     #if GPS
       static uint8_t GPSNavReset = 1;
-      if (f.GPS_FIX && GPS_numSat >= 5 ) {
+
         if (rcOptions[BOXGPSHOME]) {  // if both GPS_HOME & GPS_HOLD are checked => GPS_HOME is the priority
           if (!f.GPS_HOME_MODE)  {
-            f.GPS_HOME_MODE = 1;
-            f.GPS_HOLD_MODE = 0;
-            GPSNavReset = 0;
-            #if defined(I2C_GPS)
-              GPS_I2C_command(I2C_GPS_COMMAND_START_NAV,0);        //waypoint zero
-            #else // SERIAL
-              GPS_set_next_wp(&GPS_home[LAT],&GPS_home[LON]);
-              nav_mode    = NAV_MODE_WP;
-            #endif
+            if (f.GPS_FIX) {
+              f.GPS_HOME_MODE = 1;
+              f.GPS_HOLD_MODE = 0;
+              GPSNavReset = 0;
+              #if defined(I2C_GPS)
+                GPS_I2C_command(I2C_GPS_COMMAND_START_NAV,0);        //waypoint zero
+              #else // SERIAL
+                GPS_set_next_wp(&GPS_home[LAT],&GPS_home[LON]);
+                nav_mode    = NAV_MODE_WP;
+              #endif
+            }
           }
         } else {
           f.GPS_HOME_MODE = 0;
           if (rcOptions[BOXGPSHOLD] && abs(rcCommand[ROLL])< AP_MODE && abs(rcCommand[PITCH]) < AP_MODE) {
             if (!f.GPS_HOLD_MODE) {
-              f.GPS_HOLD_MODE = 1;
-              GPSNavReset = 0;
-              #if defined(I2C_GPS)
-                GPS_I2C_command(I2C_GPS_COMMAND_POSHOLD,0);
-              #else
-                GPS_hold[LAT] = GPS_coord[LAT];
-                GPS_hold[LON] = GPS_coord[LON];
-                GPS_set_next_wp(&GPS_hold[LAT],&GPS_hold[LON]);
-                nav_mode = NAV_MODE_POSHOLD;
-              #endif
+              if (f.GPS_FIX) {
+                f.GPS_HOLD_MODE = 1;
+                GPSNavReset = 0;
+                #if defined(I2C_GPS)
+                  GPS_I2C_command(I2C_GPS_COMMAND_POSHOLD,0);
+                #else
+                  GPS_hold[LAT] = GPS_coord[LAT];
+                  GPS_hold[LON] = GPS_coord[LON];
+                  GPS_set_next_wp(&GPS_hold[LAT],&GPS_hold[LON]);
+                  nav_mode = NAV_MODE_POSHOLD;
+                #endif
+              }
             }
           } else {
             f.GPS_HOLD_MODE = 0;
@@ -1070,14 +1074,7 @@ void loop () {
               GPS_reset_nav();
             }
           }
-        }
-      } else {
-        f.GPS_HOME_MODE = 0;
-        f.GPS_HOLD_MODE = 0;
-        #if !defined(I2C_GPS)
-          nav_mode = NAV_MODE_NONE;
-        #endif
-      }
+        } 
     #endif
     
     #if defined(FIXEDWING) || defined(HELICOPTER)
@@ -1188,7 +1185,7 @@ void loop () {
   #endif
   
   #if GPS
-    if ( (f.GPS_HOME_MODE || f.GPS_HOLD_MODE) && f.GPS_FIX_HOME ) {
+    if ((f.GPS_HOME_MODE || f.GPS_HOLD_MODE) && f.GPS_FIX && f.GPS_FIX_HOME ) {
       float sin_yaw_y = sin(att.heading*0.0174532925f);
       float cos_yaw_x = cos(att.heading*0.0174532925f);
       #if defined(NAV_SLEW_RATE)     
